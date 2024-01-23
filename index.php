@@ -3,104 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Courses</title>
 	<link rel="stylesheet" href="static/fontawesome/css/all.min.css">
-    <style>
-        /* Your CSS styles here */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-        }
-		h1 {
-			text-align: center;
-		}
-        .course {
-            max-width: 800px;
-            margin: 20px auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 10px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-		.curriculumContainer {
-			display: flex;
-			justify-content: space-between;
-		}
-		.delete-button {
-			text-decoration: none;
-			button {
-				background-color: #ff6666;
-				color: #fff; /* Set your desired text color */ 
-				padding: 5px 5px; 
-				border: none; 
-				border-radius: 5px; 
-				cursor: pointer; 
-			}
-        }
-		nav {
-			text-align: center;
-			position: sticky;
-			top: 0;
-			z-index: 100;
-			background-color: #3498db;
-			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Slightly larger box shadow with a more subtle color */
-			border-bottom: 2px solid #2980b9; /* Add a bottom border */
-			border-radius: 5px; /* Add rounded corners */
-
-			ul {
-				list-style: none;
-				padding: 0;
-				margin: 0;
-				display: flex;
-				white-space: nowrap; /* Prevent items from wrapping to the next line */
-			}
-
-			li {
-				margin: 0;
-			}
-
-			a {
-				text-decoration: none;
-				color: #ecf0f1;
-				padding: 15px;
-				display: block;
-				transition: background-color 0.3s ease;
-				border-radius: 5px; /* Add rounded corners */
-			}
-
-			a:hover {
-				background-color: #2980b9;
-			}
-
-			/* Adjustments for better spacing and appearance */
-			li:not(:last-child) {
-				margin-right: 10px;
-			}
-		}
-
-    </style>
+	<link rel="stylesheet" href="static/index.css">
+    <title>Display Courses</title>
 </head>
 
 <?php
@@ -109,125 +14,14 @@ require_once 'database.php';
 
 $db = new Db();
 
-function getCourses() {
-	global $db;
-	$sql = "SELECT
-		courses.*,
-		lecture_engagement + seminar_engagement + practice_engagement + homework_engagement + test_prep_engagement +
-		course_project_engagement + self_study_engagement + study_report_engagement + other_extracurricular_engagement +
-		exam_prep_engagement AS total_engagement,
-		CONCAT(lecturers.titles, ' ', lecturers.names) AS lecturer, departments.name AS department
-		FROM courses
-		JOIN lecturers ON lecturer_id = lecturers.id
-		JOIN departments ON department_id = departments.id";
-    $stmt = $db->getConnection()->query($sql);
-    $courses = $stmt->fetchAll();
-	error_log($courses[0]['total_engagement']);
-	return $courses;
-}
-
-function getSynopses() {
-	global $db;
-    $sql = "SELECT * FROM synopses ORDER BY course_id, position";
-    $stmt = $db->getConnection()->query($sql);
-	$result = $stmt->fetchAll();
-	$data = array();
-	foreach ($result as $item) {
-		$key = $item['course_id'];
-		if (!isset($data[$key])) {
-			$data[$key] = array();
-		}
-		array_push($data[$key], array(
-			'description' => $item['description'],
-			'horarium_lectures' => $item['horarium_lectures'],
-			'horarium_seminars' => $item['horarium_seminars'],
-			'horarium_practice' => $item['horarium_practice']
-		));
-	}
-	return $data;
-}
-
-function getExamSynopses() {
-	global $db;
-    $sql = "SELECT * FROM exams_synopses ORDER BY course_id, position";
-    $stmt = $db->getConnection()->query($sql);
-	$result = $stmt->fetchAll();
-	$data = array();
-	foreach ($result as $item) {
-		$key = $item['course_id'];
-		if (!isset($data[$key])) {
-			$data[$key] = array();
-		}
-		array_push($data[$key], array(
-			'position' => $item['position'],
-			'description' => $item['description'],
-		));
-	}
-	return $data;
-}
-
-function getBibliographies() {
-	global $db;
-    $sql = "SELECT * FROM bibliographies ORDER BY course_id, position";
-    $stmt = $db->getConnection()->query($sql);
-	$result = $stmt->fetchAll();
-	$data = array();
-	foreach ($result as $item) {
-		$key = $item['course_id'];
-		if (!isset($data[$key])) {
-			$data[$key] = array();
-		}
-		array_push($data[$key], array(
-			'position' => $item['position'],
-			'content' => $item['content'],
-		));
-	}
-	return $data;
-}
-
-function getMinors() {
-	global $db;
-    $sql = "SELECT * FROM courses_minors JOIN minors ON minor_id = minors.id ORDER BY course_id";
-    $stmt = $db->getConnection()->query($sql);
-	$result = $stmt->fetchAll();
-	$data = array();
-	foreach ($result as $item) {
-		$key = $item['course_id'];
-		if (!isset($data[$key])) {
-			$data[$key] = array();
-		}
-		array_push($data[$key], array(
-			'name' => $item['name'],
-			'abbreviation' => $item['abbreviation'],
-		));
-	}
-	return $data;
-}
-
-function getCoursesParents() {
-	global $db;
-    $sql = "SELECT * FROM course_dependencies ORDER BY child_id";
-    $stmt = $db->getConnection()->query($sql);
-	$result = $stmt->fetchAll();
-	$data = array();
-	foreach ($result as $item) {
-		$key = $item['child_id'];
-		if (!isset($data[$key])) {
-			$data[$key] = array();
-		}
-		array_push($data[$key], $item['parent_id']);
-	}
-	return $data;
-}
-
 // Fetch courses from the database
 try {
-	$courses = getCourses();
-	$synopsisFromCourseId = getSynopses();
-	$examSynopsisFromCourseId = getExamSynopses();
-	$bibliographyFromCourseId = getBibliographies();
-	$minorsFromCourseId = getMinors();
-	$parentsFromCourseId = getCoursesParents();
+	$courses = $db->getCourses();
+	$synopsisFromCourseId = $db->getSynopses();
+	$examSynopsisFromCourseId = $db->getExamSynopses();
+	$bibliographyFromCourseId = $db->getBibliographies();
+	$minorsFromCourseId = $db->getMinors();
+	$parentsFromCourseId = $db->getCoursesParents();
 } catch (PDOException $e) {
 	//only in debug mode:
     die("Error: " . $e->getMessage());

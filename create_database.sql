@@ -19,7 +19,8 @@ CREATE TABLE lecturers (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	department_id INT REFERENCES department.id ON DELETE CASCADE ON UPDATE CASCADE,
 	titles VARCHAR(50) NOT NULL,
-	names VARCHAR(255) NOT NULL UNIQUE
+	names VARCHAR(255) NOT NULL,
+	UNIQUE (titles, names)
 );
 
 CREATE TABLE synopses (
@@ -275,7 +276,7 @@ VALUES
 ('Анализ на данни', 'АД'),
 ('Математика', 'M'),
 ('Приложна математика', 'ПМ'),
-('Статистика', 'С'),
+('Статистика', 'Стат'),
 ('Математика и информатика', 'МИ');
 
 INSERT INTO `courses` VALUES

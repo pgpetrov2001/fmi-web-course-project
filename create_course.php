@@ -1,86 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Course Entry</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-        }
-		h1 {
-			text-align: center;
-		}
-        form {
-            max-width: 800px;
-            margin: 20px auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-		table {
-			width: 100%;
-		}
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        input, select, textarea {
-            width: calc(100% - 16px);
-            padding: 8px;
-            margin-bottom: 16px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-		button:disabled {
-			background-color: gray;
-		}
-		#minorsContainer{
-			display: flex;
-			flex-wrap: wrap;
-			align-content: flex-start;
-			justify-content: space-evenly;
-			input[type=checkbox] {
-				width: 15px;
-				height: 15px;
-			}
-		}
-    </style>
-</head>
-
 <?php
 
 require_once 'database.php';
 
 $db = new Db();
 
-function getAll($object) {
-	global $db;
-	$sql = "SELECT * FROM ".$object;
-	$stmt = $db->getConnection()->query($sql);
-	$items = $stmt->fetchAll();
-	return $items;
-}
-
-$minors = getAll('minors');
-$lecturers = getAll('lecturers');
-$courses = getAll('courses');
+$minors = $db->getAll('minors');
+$lecturers = $db->getAll('lecturers');
+$courses = $db->getAll('courses');
 
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="static/create_course.css">
+	<script type="text/javascript" src="static/xlsx.full.min.js"></script>
+	<script type="text/javascript">
+		const lecturers = <?php echo json_encode($lecturers); ?>;
+	</script>
+    <title>Add Course Entry</title>
+</head>
+
 
 <body>
 
@@ -89,6 +31,10 @@ $courses = getAll('courses');
 </header>
 
 <main>
+
+<label for="import-xlsx">Import course from Excel file:</label>
+<input id="import-xlsx" type="file" accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importExcel()">
+
 <form id="courseForm" action="process_form.php" method="post">
 	<label for="courseName">Course Name:</label>
 	<input type="text" id="courseName" name="courseName" required>
@@ -125,10 +71,10 @@ $courses = getAll('courses');
 	<textarea id="headnote" name="headnote" rows="6" required></textarea>
 
 	<label for="prerequisites">Prerequisites:</label>
-	<textarea id="prerequisites" name="prerequisites" rows="6" required></textarea>
+	<textarea id="prerequisites" name="prerequisites" rows="6"></textarea>
 
 	<label for="expectedResults">Expected Results:</label>
-	<textarea id="expectedResults" name="expectedResults" rows="6" required></textarea>
+	<textarea id="expectedResults" name="expectedResults" rows="6"></textarea>
 
 	<label for="credits">Credits:</label>
 	<input type="number" id="credits" name="credits" required min="0" value="0">
@@ -222,9 +168,132 @@ $courses = getAll('courses');
 
 	<button type="submit">Add Course</button>
 </form>
+<table id="course-content">
+</table>
 </main>
 
 <script>
+	function importExcel() {
+		const input = document.querySelector('#import-xlsx');
+		const file = input.files[0];
+		const reader = new FileReader();
+		reader.onload = (event) => {
+			const data = event.target.result;
+			const workbook = XLSX.read(data, { type: 'binary' });
+			const sheetName = workbook.SheetNames[0];
+			const sheet = workbook.Sheets[sheetName];
+			parseSheet(sheet);
+		};
+		reader.readAsBinaryString(input.files[0]);
+	}
+
+	const fieldToCellMapping = {
+		courseName: 'A17',
+		credits: 'O30',
+		lectureEngagement: 'O32',
+		seminarEngagement: 'O33',
+		practiceEngagement: 'O34',
+		homeworkEngagement: 'O37',
+		testPrepEngagement: 'O38',
+		courseProjectEngagement: 'O39',
+		selfStudyEngagement: 'O40',
+		studyReportEngagement: 'O41',
+		otherExtracurricularEngagement: 'O42',
+		examPrepEngagement: 'O43',
+		courseProjectGradePercentage: 'O55',
+		testsGradePercentage: 'O52',
+		examGradePercentage: 'O62',
+		headnote: 'A65',
+		prerequisites: 'A68',
+	};
+
+	function isUpperCase(s) {
+		return s == s.toUpperCase();
+	}
+	function rtrim(str, ch) {
+		let i = str.length - 1;
+		while (ch === str.charAt(i) && i >= 0) i--;
+		return str.substring(0, i + 1);
+	}
+	function isAcademicTitlePart(s) {
+		s = rtrim(s.toLowerCase(), '.');
+		if (['д-р', 'доц', 'гл', 'ас', 'инж', 'изсл', 'проф'].includes(s)) {
+			return true;
+		}
+		return s.search('\\.') != -1;
+	}
+
+	function findMatchingStaffMember(names) {
+		const tokens = names.trim().split(/\s+/);
+		const nameTokens = tokens.filter((t) => t.length && !isAcademicTitlePart(t) && isUpperCase(t[0]));
+		for (const nameToken of nameTokens) {
+			if (nameToken.endsWith('.')) {
+				if (nameToken.length != 2) {
+					return null;
+				}
+			}
+		}
+		if (![2,3].includes(nameTokens.length)) {
+			return null;
+		}
+		const match = (pattern, name) => {
+			if (pattern.endsWith('.')) {
+				return name[0] == pattern[0];
+			}
+			return name == pattern;
+		};
+		if (nameTokens.length == 2) {
+			return lecturers.find((l) => {
+				const names = l.names.trim().split(/\s+/);
+				if (names.length != 3) {
+					return false;
+				}
+				return match(nameTokens[0], names[0]) && match(nameTokens[1], names[2]);
+			}) ?? null;
+		}
+		return lecturers.find((l) => {
+			const names = l.names.trim().split(/\s+/);
+			if (names.length != 3) {
+				return false;
+			}
+			return match(nameTokens[0], names[0]) && match(nameTokens[1], names[1]) && match(nameTokens[2], names[2]);
+		}) ?? null;
+	}
+
+	function parseSheet(sheet) {
+		window.sheet = sheet;
+		const result = {};
+		for (const field in fieldToCellMapping) {
+			const cellAddress = fieldToCellMapping[field];
+			const value = sheet[cellAddress]?.v ?? 0;
+			let htmlEl = document.querySelector(`input#${field}`);
+			if (htmlEl) {
+				if (field.endsWith('Percentage')) {
+					htmlEl.value = parseInt(100*Number(value));
+				} else {
+					htmlEl.value = value;
+				}
+			} else {
+				htmlEl = document.querySelector(`#${field}`);
+				htmlEl.textContent = value;
+			}
+			result[field] = value;
+		}
+		const titular = sheet['U10']?.v ?? null;
+		let lecturer = null;
+		if (titular) {
+			lecturer = findMatchingStaffMember(titular);
+		}
+		if (lecturer) {
+			const htmlEl = document.querySelector(`#courseForm select#lecturer option[value="${lecturer.id}"]`);
+			console.log(htmlEl);
+			htmlEl.setAttribute('selected', '');
+			console.log(htmlEl);
+		}
+		result.lecturer = lecturer;
+		return result;
+	}
+
     function addSynopsisEntry() {
         const synopsisContainer = document.querySelector('#synopsisContainer table tbody');
 		const position = synopsisContainer.querySelectorAll('.synopsis-item').length + 1;
