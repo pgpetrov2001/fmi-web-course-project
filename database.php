@@ -35,6 +35,27 @@ class Db {
 		return $courses;
 	}
 
+	public function getCourse($courseId) {
+		$sql = "SELECT
+			courses.*,
+			CONCAT(lecturers.titles, ' ', lecturers.names) AS lecturer,
+			departments.name AS department
+			FROM courses
+			JOIN lecturers ON lecturer_id = lecturers.id
+			JOIN departments ON department_id = departments.id
+			WHERE courses.id = ?";
+		$stmt = $this->getConnection()->prepare($sql);
+		$stmt->execute([$courseId]);
+		$course = $stmt->fetch();
+		$course['synopsis'] = $this->getSynopses()[$courseId] ?? array();
+		$course['exam_synopsis'] = $this->getExamSynopses()[$courseId] ?? array();
+		$course['bibliography'] = $this->getBibliographies()[$courseId] ?? array();
+		$course['minors'] = $this->getMinors()[$courseId] ?? array();
+		$course['course_parents'] = $this->getCourseParents($courseId) ?? array();
+		$course['course_children'] = $this->getCourseChildren($courseId) ?? array();
+		return $course;
+	}
+
 	public function getCourses() {
 		$sql = "SELECT
 			courses.*,
@@ -121,6 +142,36 @@ class Db {
 				'name' => $item['name'],
 				'abbreviation' => $item['abbreviation'],
 			));
+		}
+		return $data;
+	}
+
+	public function getCourseParents($courseId) {
+		$sql = "SELECT courses.*
+			FROM course_dependencies
+			JOIN courses ON parent_id = courses.id
+			WHERE child_id = ?";
+		$stmt = $this->getConnection()->prepare($sql);
+		$stmt->execute([$courseId]);
+		$result = $stmt->fetchAll();
+		$data = array();
+		foreach ($result as $item) {
+			array_push($data, $item);
+		}
+		return $data;
+	}
+
+	public function getCourseChildren($courseId) {
+		$sql = "SELECT courses.*
+			FROM course_dependencies
+			JOIN courses ON child_id = courses.id
+			WHERE parent_id = ?";
+		$stmt = $this->getConnection()->prepare($sql);
+		$stmt->execute([$courseId]);
+		$result = $stmt->fetchAll();
+		$data = array();
+		foreach ($result as $item) {
+			array_push($data, $item);
 		}
 		return $data;
 	}

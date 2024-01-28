@@ -41,6 +41,17 @@ button {
 	display: flex;
 	justify-content: space-between;
 }
+.export-button {
+	text-decoration: none;
+	button {
+		background-color: #dddddd;
+		color: black; /* Set your desired text color */
+		padding: 5px 5px;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+	}
+}
 .delete-button {
 	text-decoration: none;
 	button {

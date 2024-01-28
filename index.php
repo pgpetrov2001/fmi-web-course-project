@@ -41,6 +41,8 @@ try {
 <aside>
 	<nav>
 		<ul>
+			<li><a onclick="window.scrollTo(0,0)">Home</a>
+			<br/>
 			<?php foreach ($courses as $course): ?>
 			<li><a href="#course-<?php echo $course['id']; ?>"><?php echo $course['name']; ?></a></li>
 			<?php endforeach; ?>
@@ -56,12 +58,15 @@ try {
 			<?php $bibliography = $bibliographyFromCourseId[$course['id']] ?? array(); ?>
 			<?php $minors = $minorsFromCourseId[$course['id']] ?? array(); ?>
 			<section class="course" id="course-<?php echo $course['id']; ?>">
-				<div class="curriculumContainer" style="">
-					<h2>Curriculum</h2>
+				<div class="curriculumContainer">
+					<a href="#" class="export-button" data-courseid="<?php echo $course['id']; ?>">
+						<button><i class="fa-solid fa-file-export"></i> Export JSON </button>
+					</a>
 					<a href="#" class="delete-button" data-courseid="<?php echo $course['id']; ?>">
 						<button><i class="fa fa-trash"></i> Delete </button>
 					</a>
 				</div>
+				<h2>Curriculum</h2>
 				<table>
 					<thead> <th>Minors:</th> </thead>
 					<tbody> <td><?php echo join(', ', array_map(fn($m) => $m['abbreviation'], $minors)) ?></td> </tbody>
@@ -188,8 +193,8 @@ try {
 </main>
 
 <script>
-	const links = document.querySelectorAll('.course a.delete-button');
-	for (const link of links) {
+	const deleteLinks = document.querySelectorAll('.course a.delete-button');
+	for (const link of deleteLinks) {
 		const courseId = link.dataset.courseid;
 		link.onclick = async (ev) => {
 			ev.preventDefault();
@@ -209,6 +214,34 @@ try {
 			}
 		};
 	}
+
+	const exportLinks = document.querySelectorAll('.course a.export-button');
+	for (const link of exportLinks) {
+		const courseId = link.dataset.courseid;
+		link.onclick = async (ev) => {
+			ev.preventDefault();
+			const data = await fetch(`export.php?courseid=${courseId}`, { method: 'GET' })
+				.then((res) => {
+					if (!res.ok) {
+						throw Error(`Server returned status ${res.status}: ${res.statusText}`);
+					}
+					console.log(`Course with id ${courseId} JSON fetched successfully.`);
+					return res.json();
+				}).catch((err) => {
+					console.error(`Fetching course with id ${courseId} failed with the following error: ${err.message}`)
+					return false;
+				});
+			
+			const fakeLink = document.createElement('a');
+			fakeLink.download = `ИД-${data['Дисциплина']}.json`;
+			const blob = new Blob([JSON.stringify(data)], { type: 'text/plain' })
+			fakeLink.href = URL.createObjectURL(blob);
+			document.body.appendChild(fakeLink);
+			fakeLink.click();
+			document.body.removeChild(fakeLink);
+		};
+	}
+
 </script>
 </body>
 </html>
