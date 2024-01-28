@@ -38,13 +38,15 @@ try {
 	<a href="show_graph.php"><button>Show graph</button></a>
 </header>
 
-<nav>
-	<ul>
-		<?php foreach ($courses as $course): ?>
-		<li><a href="#course-<?php echo $course['id']; ?>"><?php echo $course['name']; ?></a></li>
-		<?php endforeach; ?>
-	</ul>
-</nav>
+<aside>
+	<nav>
+		<ul>
+			<?php foreach ($courses as $course): ?>
+			<li><a href="#course-<?php echo $course['id']; ?>"><?php echo $course['name']; ?></a></li>
+			<?php endforeach; ?>
+		</ul>
+	</nav>
+</aside>
 
 <main>
 	<?php if (!empty($courses)): ?>

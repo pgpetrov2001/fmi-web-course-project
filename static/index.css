@@ -53,32 +53,39 @@ button {
 	}
 }
 nav {
+	display: block;
 	text-align: center;
-	position: sticky;
-	top: 0;
+	/* position: sticky; */
+	/* top: 0; */
+	position: fixed;
 	z-index: 100;
 	background-color: #3498db;
 	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Slightly larger box shadow with a more subtle color */
 	border-bottom: 2px solid #2980b9; /* Add a bottom border */
 	border-radius: 5px; /* Add rounded corners */
+	overflow-x: hidden;
+	margin-top: 3vh;
+	height: 100vh;
+	width: 20vw;
 
 	ul {
 		list-style: none;
 		padding: 0;
 		margin: 0;
-		display: flex;
 		white-space: nowrap; /* Prevent items from wrapping to the next line */
 	}
 
 	li {
 		margin: 0;
+		width: 100%;
 	}
 
 	a {
+		display: block;
+		width: 100%;
 		text-decoration: none;
 		color: #ecf0f1;
 		padding: 15px;
-		display: block;
 		transition: background-color 0.3s ease;
 		border-radius: 5px; /* Add rounded corners */
 	}
@@ -89,7 +96,7 @@ nav {
 
 	/* Adjustments for better spacing and appearance */
 	li:not(:last-child) {
-		margin-right: 10px;
+		margin-bottom: 10px;
 	}
 }
 
