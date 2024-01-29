@@ -8,6 +8,27 @@ $minors = $db->getAll('minors');
 $lecturers = $db->getAll('lecturers');
 $courses = $db->getAll('courses');
 
+$defaultExcelConfiguration = array(
+	[ 'name' => "Course Name", 'id' => "courseName", 'cell' => 'A17' ],
+	[ 'name' => "Lecturer", 'id' => "lecturer", 'cell' => 'U10' ],
+	[ 'name' => "Credits", 'id' => "credits", 'cell' => 'O30' ],
+	[ 'name' => "Lecture Engagement", 'id' => "lectureEngagement", 'cell' => 'O32' ],
+	[ 'name' => "Seminar Engagement", 'id' => "seminarEngagement", 'cell' => 'O33' ],
+	[ 'name' => "Practice Engagement", 'id' => "practiceEngagement", 'cell' => 'O34' ],
+	[ 'name' => "Homework Engagement", 'id' => "homeworkEngagement", 'cell' => 'O37' ],
+	[ 'name' => "Test Prep Engagement", 'id' => "testPrepEngagement", 'cell' => 'O38' ],
+	[ 'name' => "Course Project Engagement", 'id' => "courseProjectEngagement", 'cell' => 'O39' ],
+	[ 'name' => "Self Study Engagement", 'id' => "selfStudyEngagement", 'cell' => 'O40' ],
+	[ 'name' => "Study Report Engagement", 'id' => "studyReportEngagement", 'cell' => 'O41' ],
+	[ 'name' => "Other Extracurricular Engagement", 'id' => "otherExtracurricularEngagement", 'cell' => 'O42' ],
+	[ 'name' => "Exam Prep Engagement", 'id' => "examPrepEngagement", 'cell' => 'O43' ],
+	[ 'name' => "Course Project Grade Percentage", 'id' => "courseProjectGradePercentage", 'cell' => 'O55' ],
+	[ 'name' => "Tests Grade Percentage", 'id' => "testsGradePercentage", 'cell' => 'O52' ],
+	[ 'name' => "Exam Grade Percentage", 'id' => "examGradePercentage", 'cell' => 'O62' ],
+	[ 'name' => "Headnote", 'id' => "headnote", 'cell' => 'A65' ],
+	[ 'name' => "Prerequisites", 'id' => "prerequisites", 'cell' => 'A68' ],
+);
+
 ?>
 
 <!DOCTYPE html>
@@ -31,9 +52,7 @@ $courses = $db->getAll('courses');
 </header>
 
 <main>
-
-<label for="import-xlsx">Import course from Excel file:</label>
-<input id="import-xlsx" type="file" accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importExcel()">
+<div id="content">
 
 <form id="courseForm" action="process_form.php" method="post">
 	<label for="courseName">Course Name:</label>
@@ -168,8 +187,39 @@ $courses = $db->getAll('courses');
 
 	<button type="submit">Add Course</button>
 </form>
-<table id="course-content">
-</table>
+
+<div id="import-excel-container">
+	<label for="import-xlsx">Import course from Excel file:</label>
+	<input id="import-xlsx" type="file" accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importExcel()">
+	<button onclick="clearFileInput('import-xlsx')">Clear file</button>
+
+	<table id="excel-configuration">
+		<h2>Field to cell mapping for Excel import:</h2>
+<?php foreach ($defaultExcelConfiguration as $excelField): ?>
+		<tr data-id="<?php echo $excelField['id']; ?>">
+			<td>
+				<label> <?php echo $excelField['name']; ?>: </label>
+			</td>
+			<td>
+				<select class="cell-letter">
+<?php for ($i = ord('A'); $i <= ord('Z'); $i++): ?>
+<?php if ($excelField['cell'][0] == chr($i)): ?>
+					<option value="<?php echo chr($i); ?>" selected> <?php echo chr($i); ?></option>
+<?php else: ?>
+					<option value="<?php echo chr($i); ?>"> <?php echo chr($i); ?> </option>
+<?php endif; ?>
+<?php endfor; ?>
+				</select>
+			</td>
+			<td>
+				<input class="cell-number" type="number" min="0" max="1000" value="<?php echo substr($excelField['cell'], 1); ?>">
+			</td>
+		</tr>
+<?php endforeach; ?>
+	</table>
+</div>
+
+</div>
 </main>
 
 <script>
@@ -187,25 +237,23 @@ $courses = $db->getAll('courses');
 		reader.readAsBinaryString(input.files[0]);
 	}
 
-	const fieldToCellMapping = {
-		courseName: 'A17',
-		credits: 'O30',
-		lectureEngagement: 'O32',
-		seminarEngagement: 'O33',
-		practiceEngagement: 'O34',
-		homeworkEngagement: 'O37',
-		testPrepEngagement: 'O38',
-		courseProjectEngagement: 'O39',
-		selfStudyEngagement: 'O40',
-		studyReportEngagement: 'O41',
-		otherExtracurricularEngagement: 'O42',
-		examPrepEngagement: 'O43',
-		courseProjectGradePercentage: 'O55',
-		testsGradePercentage: 'O52',
-		examGradePercentage: 'O62',
-		headnote: 'A65',
-		prerequisites: 'A68',
-	};
+	<?php $keys = array_map(function ($entry) { return $entry['id']; }, $defaultExcelConfiguration); ?>
+	<?php $values = array_map(function ($entry) { return $entry['cell']; }, $defaultExcelConfiguration); ?>
+	<?php $fieldToCellMapping = array_combine($keys, $values); ?>
+	const fieldToCellMapping = <?php echo json_encode($fieldToCellMapping); ?>;
+
+	for (const input of document.querySelectorAll('#excel-configuration input')) {
+		input.onchange = (ev) => {
+			const key = ev.target.parentElement.parentElement.dataset.id;
+			fieldToCellMapping[key] = fieldToCellMapping[key][0] + ev.target.value;
+		};
+	}
+	for (const input of document.querySelectorAll('#excel-configuration select')) {
+		input.onchange = (ev) => {
+			const key = ev.target.parentElement.parentElement.dataset.id;
+			fieldToCellMapping[key] = ev.target.value + fieldToCellMapping[key].substr(1);
+		};
+	}
 
 	function isUpperCase(s) {
 		return s == s.toUpperCase();
@@ -264,6 +312,7 @@ $courses = $db->getAll('courses');
 		window.sheet = sheet;
 		const result = {};
 		for (const field in fieldToCellMapping) {
+			if (['lecturer'].includes(field)) continue;
 			const cellAddress = fieldToCellMapping[field];
 			const value = sheet[cellAddress]?.v ?? 0;
 			let htmlEl = document.querySelector(`input#${field}`);
@@ -279,16 +328,14 @@ $courses = $db->getAll('courses');
 			}
 			result[field] = value;
 		}
-		const titular = sheet['U10']?.v ?? null;
+		const titular = sheet[fieldToCellMapping.lecturer]?.v ?? null;
 		let lecturer = null;
 		if (titular) {
 			lecturer = findMatchingStaffMember(titular);
 		}
 		if (lecturer) {
 			const htmlEl = document.querySelector(`#courseForm select#lecturer option[value="${lecturer.id}"]`);
-			console.log(htmlEl);
 			htmlEl.setAttribute('selected', '');
-			console.log(htmlEl);
 		}
 		result.lecturer = lecturer;
 		return result;
@@ -365,6 +412,10 @@ $courses = $db->getAll('courses');
 		field.oninput = trackConstraint;
 	}
 	trackConstraint();
+
+	function clearFileInput(id) {
+		document.querySelector(`#${id}`).value = "";
+	}
 </script>
 
 </body>

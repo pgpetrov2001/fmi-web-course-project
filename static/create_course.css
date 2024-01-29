@@ -5,6 +5,9 @@ body {
 h1 {
 	text-align: center;
 }
+#content {
+	display: flex;
+}
 form {
 	max-width: 800px;
 	margin: 20px auto;
@@ -16,19 +19,34 @@ form {
 table {
 	width: 100%;
 }
-label {
-	display: block;
-	margin-bottom: 8px;
-	font-weight: bold;
+form {
+	label {
+		display: block;
+		margin-bottom: 8px;
+		font-weight: bold;
+	}
+	input, select, textarea {
+		width: calc(100% - 16px);
+		padding: 8px;
+		margin-bottom: 16px;
+		box-sizing: border-box;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		font-size: 14px;
+	}
 }
-input, select, textarea {
-	width: calc(100% - 16px);
-	padding: 8px;
-	margin-bottom: 16px;
-	box-sizing: border-box;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	font-size: 14px;
+#excel-configuration {
+	label {
+		font-weight: bold;
+
+	}
+	select, input {
+		background-color: white;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		margin-bottom: 4px;
+		font-size: 14px;
+	}
 }
 button {
 	background-color: #4CAF50;
